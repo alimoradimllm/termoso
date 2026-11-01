@@ -99,6 +99,8 @@ export interface Settings {
   confirmCloseTab: boolean;
   confirmPasteMultiline: boolean;
   autocomplete: boolean;
+  /** Resource monitor bar under SSH terminals (CPU, memory, network, disks). */
+  remoteMonitor: boolean;
   /** Install OSC 133 prompt markers into bash / zsh / fish after connecting. */
   shellIntegration: boolean;
   /** Output triggers: regexes watched on every terminal. */
@@ -254,6 +256,8 @@ export interface TeamPolicies {
   jump_host_required: boolean;
   /** `deny` = no local export/backup of team vault data (client-enforced). */
   export: "allow" | "deny";
+  /** `deny` = no offline copies of files read from team hosts (client-enforced). */
+  offline_cache: "allow" | "deny";
   /** Remote ports members may forward from team hosts (`22`, `8000-8999`); empty = any. */
   forward_ports: string[];
   /** Sign-in requires the device to prove disk encryption / a screen lock / a hardware-backed key. */
@@ -1939,6 +1943,30 @@ export interface DirEntry {
   dir: boolean;
 }
 
+/** One filesystem in the remote monitor. Sizes in KiB. */
+export interface MonitorDisk {
+  mount: string;
+  totalKb: number;
+  usedKb: number;
+}
+
+/** What one remote-monitor probe measured. Rates are null until two probes exist. */
+export interface MonitorSnapshot {
+  host: string;
+  cpuPercent: number | null;
+  memUsedKb: number;
+  memTotalKb: number;
+  rxBps: number | null;
+  txBps: number | null;
+  uptimeSecs: number;
+  load: [number, number, number] | null;
+  users: string[];
+  disks: MonitorDisk[];
+}
+
+/** `unsupported`: the remote has no /proc (BSD, macOS, network gear). */
+export type MonitorReply = { kind: "ok"; snapshot: MonitorSnapshot } | { kind: "unsupported" };
+
 export type SessionState = "connecting" | "connected";
 
 export interface SessionInfo {
@@ -2183,7 +2211,33 @@ export interface Listing {
 export type SftpTarget =
   | { kind: "host"; host_id: Uuid; vault_id?: Uuid | null; sudo_password?: string | null }
   | { kind: "session"; session_id: Uuid }
-  | { kind: "webdav"; host_id: Uuid; vault_id?: Uuid | null };
+  | { kind: "webdav"; host_id: Uuid; vault_id?: Uuid | null }
+  /** Read-only view of the host's offline copies; no connection is made. */
+  | { kind: "offline"; host_id: Uuid };
+
+/** Per-host offline-copy settings (device-local). */
+export interface FileCacheSettings {
+  /** False when the team policy forbids offline copies for this host. */
+  allowed: boolean;
+  enabled: boolean;
+  maxFileMib: number;
+  maxTotalMib: number;
+  includePaths: string[];
+  excludePaths: string[];
+}
+
+export interface FileCacheHost {
+  hostId: Uuid;
+  label: string;
+  files: number;
+  bytes: number;
+}
+
+export interface FileCacheOverview {
+  files: number;
+  bytes: number;
+  hosts: FileCacheHost[];
+}
 
 export type RemoteProtocol = "sftp" | "webdav";
 

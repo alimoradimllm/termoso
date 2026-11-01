@@ -3,6 +3,10 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
+  AccessReview,
+  AccessReviewDetail,
+  AccessReviewItem,
+  AccessReviewList,
   AccountStatus,
   AgentImportFileForm,
   AgentImportForm,
@@ -13,8 +17,14 @@ import type {
   AppInfo,
   AuditFilter,
   AuditPage,
+  AuditVerification,
+  Automation,
+  AutomationList,
+  AutomationRun,
+  AutomationRunList,
   BackupSummary,
   BookmarkCard,
+  BreakGlass,
   CertificateCard,
   CloudConfig,
   CloudImportReport,
@@ -25,22 +35,26 @@ import type {
   CloudSyncSecret,
   CommandHistory,
   Conflict,
+  CreateAutomationRequest,
   CsvExportReport,
   Device,
+  DiffResult,
+  DiffSide,
   DirEntry,
+  MonitorReply,
   Direction,
   EditEvent,
-  SyncCard,
-  SyncEvent,
-  SyncInfo,
   EditInfo,
   Entity,
   ExportToHostResult,
   Fido2Device,
   Fido2GenerateForm,
   Fido2LoadForm,
+  FileCacheOverview,
+  FileCacheSettings,
   ForwardEvent,
   FsEntry,
+  GatewayInfo,
   GenerateKeyForm,
   GroupForm,
   GroupNode,
@@ -59,13 +73,15 @@ import type {
   ImportSource,
   Inherited,
   InviteResult,
+  IssuedCertificate,
+  IssuedCertificateList,
   KeyCard,
   KeyPreview,
   KnownHostCard,
   Listing,
   LiveEvent,
   LocalDevice,
-  TailnetScan,
+  LocalTeamCertificate,
   LocalVault,
   LogBody,
   LogCard,
@@ -83,6 +99,8 @@ import type {
   PromptAnswer,
   PromptClosedEvent,
   PromptEvent,
+  QuietProgress,
+  QuietRun,
   ReauthOutcome,
   RegisterForm,
   Registered,
@@ -104,10 +122,15 @@ import type {
   SshIdView,
   SsoOutcome,
   SsoStartForm,
+  SyncCard,
+  SyncEvent,
+  SyncInfo,
   SyncNotice,
   SyncStatus,
   TagInfo,
+  TailnetScan,
   Team,
+  TeamCa,
   TeamInvite,
   TeamMember,
   TeamPoliciesResponse,
@@ -118,8 +141,10 @@ import type {
   ThemeImport,
   TransferEvent,
   TransferInfo,
+  UpdateAutomationRequest,
   UpdateEvent,
   UpdateInfo,
+  UpdateTeamCaRequest,
   UpdateTeamPolicies,
   UserProfile,
   Uuid,
@@ -133,28 +158,6 @@ import type {
   WebhookDelivery,
   WebhookKind,
   WorkspacesState,
-  QuietProgress,
-  QuietRun,
-  IssuedCertificate,
-  IssuedCertificateList,
-  LocalTeamCertificate,
-  TeamCa,
-  UpdateTeamCaRequest,
-  Automation,
-  AutomationList,
-  AutomationRun,
-  AutomationRunList,
-  CreateAutomationRequest,
-  UpdateAutomationRequest,
-  GatewayInfo,
-  AccessReview,
-  AccessReviewDetail,
-  AccessReviewItem,
-  AccessReviewList,
-  AuditVerification,
-  BreakGlass,
-  DiffResult,
-  DiffSide,
 } from "./types";
 import type {
   AccessRequest,
@@ -275,6 +278,10 @@ export const historyClearConnections = () => invoke<null>("history_clear_connect
 /** Directory listing as the session sees it (path completion). */
 export const terminalListDir = (id: Uuid, cwd: string | null, path: string) =>
   invoke<DirEntry[]>("terminal_list_dir", { id, cwd, path });
+/** One read-only resource probe of the machine behind an SSH session. */
+export const terminalMonitor = (id: Uuid) => invoke<MonitorReply>("terminal_monitor", { id });
+/** Drop the stored counters of a session (bar switched off). */
+export const terminalMonitorReset = (id: Uuid) => invoke<null>("terminal_monitor_reset", { id });
 /** Type a stored password (+ Enter) into the session; `null` = the host's own identity. */
 export const terminalInsertPassword = (id: Uuid, identityId: Uuid | null) =>
   invoke<null>("terminal_insert_password", { id, identityId });
@@ -327,6 +334,15 @@ export const sftpSessionsList = () => invoke<SftpInfo[]>("sftp_sessions_list");
 export const sftpOpen = (id: Uuid, target: SftpTarget) =>
   invoke<SftpInfo>("sftp_open", { id, target });
 export const sftpClose = (id: Uuid) => invoke<null>("sftp_close", { id });
+export const sftpOfflineAvailable = (hostId: Uuid) =>
+  invoke<boolean>("sftp_offline_available", { hostId });
+export const fileCacheSettings = (hostId: Uuid) =>
+  invoke<FileCacheSettings>("file_cache_settings", { hostId });
+export const setFileCacheSettings = (hostId: Uuid, settings: FileCacheSettings) =>
+  invoke<null>("set_file_cache_settings", { hostId, settings });
+export const fileCacheOverview = () => invoke<FileCacheOverview>("file_cache_overview");
+export const clearFileCache = (hostId: Uuid | null) =>
+  invoke<number>("clear_file_cache", { hostId });
 export const sftpList = (id: Uuid, path: string | null) =>
   invoke<Listing>("sftp_list", { id, path });
 export const sftpStat = (id: Uuid, path: string) => invoke<FsEntry>("sftp_stat", { id, path });

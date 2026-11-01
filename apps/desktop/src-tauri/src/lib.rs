@@ -20,6 +20,7 @@ mod import;
 #[cfg(target_os = "linux")]
 mod linux_graphics;
 mod logs;
+mod monitor;
 mod mosh;
 mod multiplayer;
 mod presence;
@@ -118,6 +119,7 @@ pub fn run() {
             let locked = state.is_locked();
             app.manage(state);
             app.manage(UpdateHub::default());
+            app.manage(monitor::MonitorState::default());
             app.manage(quick::LaunchFiles::from_args(std::env::args().skip(1)));
             app.manage(quick::LaunchLinks::from_args(std::env::args().skip(1)));
             #[cfg(target_os = "macos")]
@@ -198,6 +200,8 @@ pub fn run() {
             complete::terminal_list_dir,
             complete::terminal_insert_password,
             complete::terminal_host_identity,
+            monitor::terminal_monitor,
+            monitor::terminal_monitor_reset,
             workspaces::workspaces_get,
             workspaces::workspaces_set,
             commands::sessions_list,
@@ -209,6 +213,11 @@ pub fn run() {
             commands::prompt_answer,
             commands::sftp_sessions_list,
             commands::sftp_open,
+            commands::sftp_offline_available,
+            commands::file_cache_settings,
+            commands::set_file_cache_settings,
+            commands::file_cache_overview,
+            commands::clear_file_cache,
             commands::sftp_close,
             commands::sftp_list,
             commands::sftp_stat,

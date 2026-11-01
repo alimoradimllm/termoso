@@ -74,6 +74,7 @@ import { ChainDialog, ProxyDialog } from "./HostAdvancedDialogs";
 import { ConnectedNowCard, useVaultPresence } from "./PresenceViews";
 import { tr, trn, msg } from "@/i18n";
 import { requirePerm } from "@/team/perms";
+import { LocalCopiesSection } from "./LocalCopiesSection";
 
 const IP_VERSIONS: { value: IpVersion; label: string }[] = [
   { value: "auto", label: msg("Auto") },
@@ -313,21 +314,25 @@ function HostEditor({
     if (!ok) return;
     dirty.current = false;
     inFlight.current = true;
-    save.mutate(f, {
-      onSuccess: (card) => {
-        if (f.id === null) {
-          latest.current = { ...latest.current, form: { ...latest.current.form, id: card.id } };
-          setForm((cur) => ({ ...cur, id: card.id }));
-          snackbar.notify(tr("Host “{label}” added", { label: card.label }));
-        }
-        setSaved(true);
-        after?.(card);
+    // An empty name falls back to the address; an explicit name always wins.
+    save.mutate(
+      { ...f, label: f.label.trim() || f.address.trim() },
+      {
+        onSuccess: (card) => {
+          if (f.id === null) {
+            latest.current = { ...latest.current, form: { ...latest.current.form, id: card.id } };
+            setForm((cur) => ({ ...cur, id: card.id }));
+            snackbar.notify(tr("Host “{label}” added", { label: card.label }));
+          }
+          setSaved(true);
+          after?.(card);
+        },
+        onError: (e) => snackbar.error(errorMessage(e)),
+        onSettled: () => {
+          inFlight.current = false;
+        },
       },
-      onError: (e) => snackbar.error(errorMessage(e)),
-      onSettled: () => {
-        inFlight.current = false;
-      },
-    });
+    );
   };
   const persistRef = useRef(persist);
   useEffect(() => {
@@ -1121,6 +1126,7 @@ function HostEditor({
               onClick={() => set("webdav", emptyWebDav())}
             />
           )}
+          {id !== null && !readOnly && <LocalCopiesSection hostId={id} />}
         </Box>
 
         <TagsPopover

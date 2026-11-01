@@ -16,6 +16,7 @@ import { HostAvatar } from "./HostAvatar";
 import { GroupTile, groupSubtitle, SelectableTile, type HostCollectionProps } from "./HostGrid";
 import { PresenceStack } from "./PresenceViews";
 import { tr } from "@/i18n";
+import { HOST_ITEM_ATTR, hostItemFocusSx, hostItemKeyDown } from "./keyboardNav";
 
 const rowSx = {
   "& td": { py: 0.5 },
@@ -65,7 +66,10 @@ export function HostList(p: HostCollectionProps) {
           <TableRow
             key={g.id}
             hover
-            sx={[rowSx, p.dnd?.dropping === g.id ? droppingSx : {}]}
+            tabIndex={0}
+            {...{ [HOST_ITEM_ATTR]: "" }}
+            onKeyDown={(e) => hostItemKeyDown(e, () => p.onOpenGroup(g.id))}
+            sx={[rowSx, hostItemFocusSx, p.dnd?.dropping === g.id ? droppingSx : {}]}
             onClick={() => p.onOpenGroup(g.id)}
             onContextMenu={(e) => p.onGroupContext(g, e)}
             {...p.dnd?.dropGroup(g)}
@@ -104,7 +108,10 @@ export function HostList(p: HostCollectionProps) {
               key={h.id}
               hover
               selected={isChecked || h.id === p.selectedId}
-              sx={[rowSx, p.dnd?.dragging.has(h.id) ? { opacity: 0.45 } : {}]}
+              tabIndex={0}
+              {...{ [HOST_ITEM_ATTR]: "" }}
+              onKeyDown={(e) => hostItemKeyDown(e, () => p.onConnectHost(h))}
+              sx={[rowSx, hostItemFocusSx, p.dnd?.dragging.has(h.id) ? { opacity: 0.45 } : {}]}
               onClick={(e) => p.onOpenHost(h, e)}
               onDoubleClick={() => p.onConnectHost(h)}
               onContextMenu={(e) => p.onHostContext(h, e)}
@@ -121,7 +128,7 @@ export function HostList(p: HostCollectionProps) {
               <TableCell>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Typography variant="body1" sx={{ fontWeight: 500 }} noWrap>
-                    {h.label}
+                    {h.label || h.address}
                   </Typography>
                   {p.presence?.has(h.id) && (
                     <PresenceStack viewers={p.presence.get(h.id) ?? []} size={18} />
